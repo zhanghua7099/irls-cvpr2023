@@ -1,6 +1,6 @@
 """
 Python port of example.m
-论文: LP, C. Kümmerle, R. Vidal,
+论文: Liangzu Peng, Christian Kümmerle, René Vidal,
      "On the Convergence of IRLS and Its Variants in Outlier-Robust Estimation", CVPR 2023
 
 本文件实现了两种鲁棒点云配准算法：
@@ -151,7 +151,7 @@ def ls_rotation_search(Y: np.ndarray, X: np.ndarray) -> np.ndarray:
 
 
 def ls_point_cloud_registration(Y: np.ndarray, X: np.ndarray,
-                                 weights: np.ndarray):
+                                 weights: np.ndarray) -> tuple:
     """加权最小二乘点云配准，求解 R, t。
 
     算法：
@@ -382,7 +382,7 @@ if __name__ == "__main__":
 
     # ── 参数设置 ──────────────────────────────
     m = 1000                              # 总点对数
-    k = 900                               # 外点数量（外点比例 = 90%）
+    nr_outliers = 900                     # 外点数量（外点比例 = 90%）
     sigma = 0.01                          # 高斯噪声标准差
 
     # 噪声界：5.54σ ≈ sqrt(chi2inv(0.99,3)) * sigma（经验倍数）
@@ -393,7 +393,7 @@ if __name__ == "__main__":
     # ── 生成随机点云配准问题 ──────────────────
     problem = gen_point_cloud_registration(
         N=m,
-        outlier_ratio=k / m,
+        outlier_ratio=nr_outliers / m,
         noise_sigma=sigma,
         translation_bound=10.0,
     )
