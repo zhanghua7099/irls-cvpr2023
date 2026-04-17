@@ -11,6 +11,7 @@ Python port of example.m
 """
 
 import numpy as np
+import scipy.io
 from scipy.spatial.transform import Rotation
 from scipy.stats import chi2
 
@@ -402,6 +403,19 @@ if __name__ == "__main__":
     R_gt = problem["R_gt"]               # 真值旋转
     t_gt = problem["t_gt"]               # 真值平移
 
+    # ── 将问题数据保存到 problem_data.mat ────────
+    # MATLAB 端直接加载此文件，保证两种实现使用完全相同的输入数据
+    scipy.io.savemat(
+        "problem_data.mat",
+        {
+            "cloudA": X,          # 3×m 源点云
+            "cloudB": Y,          # 3×m 目标点云
+            "R_gt":   R_gt,       # 3×3 真值旋转
+            "t_gt":   t_gt,       # 3×1 真值平移
+        },
+    )
+    print("问题数据已保存到 problem_data.mat（MATLAB 端请先运行 Python 再运行 MATLAB）\n")
+
     # ── 运行 MS-GNC-TLS ───────────────────────
     R_mgnc, t_mgnc = gnc_tls_point_cloud_registration(
         Y, X,
@@ -429,10 +443,30 @@ if __name__ == "__main__":
     t_err_mgnc  = float(np.linalg.norm(t_mgnc  - t_gt) / np.linalg.norm(t_gt))
     t_err_irls0 = float(np.linalg.norm(t_irls0 - t_gt) / np.linalg.norm(t_gt))
 
-    print("\n旋转角度误差（度）:")
-    print(f"  MS-GNC-TLS : {ang_err_mgnc:.6f}°")
-    print(f"  GNC-IRLS0  : {ang_err_irls0:.6f}°")
+    # ── 打印结构化结果（与 MATLAB 格式对齐，便于对比）──
+    def _fmt_matrix(M: np.ndarray) -> str:
+        """将矩阵每行格式化为固定精度字符串，行间用换号分隔。"""
+        rows = []
+        for row in M:
+            rows.append("  " + "  ".join(f"{v:.15g}" for v in row))
+        return "\n".join(rows)
 
-    print("\n平移相对误差:")
-    print(f"  MS-GNC-TLS : {t_err_mgnc:.6f}")
-    print(f"  GNC-IRLS0  : {t_err_irls0:.6f}")
+    def _fmt_vec(v: np.ndarray) -> str:
+        return "  " + "  ".join(f"{x:.15g}" for x in v.ravel())
+
+    print("=== MS-GNC-TLS ===")
+    print("R:")
+    print(_fmt_matrix(R_mgnc))
+    print("t:")
+    print(_fmt_vec(t_mgnc))
+    print(f"Rotation error (deg):          {ang_err_mgnc:.15g}")
+    print(f"Translation relative error:    {t_err_mgnc:.15g}")
+
+    print()
+    print("=== GNC-IRLS0 ===")
+    print("R:")
+    print(_fmt_matrix(R_irls0))
+    print("t:")
+    print(_fmt_vec(t_irls0))
+    print(f"Rotation error (deg):          {ang_err_irls0:.15g}")
+    print(f"Translation relative error:    {t_err_irls0:.15g}")
